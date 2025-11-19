@@ -152,3 +152,121 @@ def fnDeleteService(strServiceId):
     except Exception:
         HelperFunctions.PrintException()
         return ResponseMessage.message500
+    
+def fnDeleteProject(strProjectId):
+    try:
+        
+        if not ObjectId.is_valid(strProjectId):
+            return {
+                **ResponseMessage.message202,
+                'data': 'invalid project id'
+            }
+            
+        result = dbConnLocal.clProjects.find_one({'_id': ObjectId(strProjectId)})
+        
+        if result == None:
+            return ResponseMessage.message404
+        
+        dbConnLocal.clProjects.delete_one({'_id': ObjectId(strProjectId)})
+        
+        return ResponseMessage.message200
+    
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+    
+def fnGetProject(strProjectId):
+    try:
+        
+        if not ObjectId.is_valid(strProjectId):
+            return {
+                **ResponseMessage.message202,
+                'data': 'invalid project id'
+            }
+            
+        result = dbConnLocal.clProjects.find_one({'_id': ObjectId(strProjectId)})
+        
+        if result == None:
+            return ResponseMessage.message404
+        
+        return {
+            **ResponseMessage.message200,
+            'Result': {
+                **result,
+                '_id': str(result['_id'])
+                }
+            }
+    
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+    
+def fnDeactivateProject(strProjectId):
+    try:
+        
+        if not ObjectId.is_valid(strProjectId):
+            return {
+                **ResponseMessage.message202,
+                'data': 'invalid project id'
+            }
+        
+        project = dbConnLocal.clProjects.find_one({'_id': ObjectId(strProjectId)})
+        
+        if project == None:
+            return ResponseMessage.message404
+        
+        
+        
+        result = dbConnLocal.clProjects.update_one({'_id': ObjectId(strProjectId)}, {'$set': {
+            "active": False,
+            "modificationDate": datetime.now()
+        }})
+        
+        
+        print(result.matched_count)
+        print(result.modified_count)
+        
+        return ResponseMessage.message200
+    
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+    
+def fnUpdateProject(strProjectId, strTitle, strFeatures, strDescription, boolActive, strImgUrl, strIconUrl, strTitleEng, strFeaturesEng, strDescriptionEng):
+    try:
+        print(strTitleEng)
+        if not ObjectId.is_valid(strProjectId):
+            return {
+                **ResponseMessage.message202,
+                'data': 'invalid project id'
+            }
+        
+        project = dbConnLocal.clProjects.find_one({'_id': ObjectId(strProjectId)})
+        
+        if project == None:
+            return ResponseMessage.message404
+        
+        
+        
+        result = dbConnLocal.clProjects.update_one({'_id': ObjectId(strProjectId)}, {'$set': {
+            "strTitle": strTitle,
+            "strFeatures": strFeatures,
+            "strDescription": strDescription,
+            "boolActive": boolActive,
+            "strImageUrl": strImgUrl,
+            "strIconUrl": strIconUrl,
+            "strTitleEng": strTitleEng,
+            "strFeaturesEng": strFeaturesEng,
+            "strDescriptionEng": strDescriptionEng,
+            "modificationDate": datetime.now()
+        }})
+        
+        
+        print(result.matched_count)
+        print(result.modified_count)
+        
+        return ResponseMessage.message200
+    
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500

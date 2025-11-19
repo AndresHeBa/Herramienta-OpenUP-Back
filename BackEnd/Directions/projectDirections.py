@@ -141,3 +141,16 @@ def deleteProject(strProjectId):
     except Exception:
         HelperFunctions.PrintException()
         return ResponseMessage.message500
+    
+# baja logica
+@projectBluePrint.put('/deactivateProject/<strProjectId>')
+def deactivateProject(strProjectId):
+    try:
+        
+        objResult = callMethod.fnDeactivateProject(strProjectId)
+
+        return jsonify(objResult)
+    
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
