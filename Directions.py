@@ -5,6 +5,7 @@ import BackEnd.GlobalInfo.ResponseMessages as ResponseMessage
 # Blueprints
 from BackEnd.Directions.authDirections import authBluePrint
 from BackEnd.Directions.serviceDirections import serviceBluePrint
+from BackEnd.Directions.projectDirections import projectBluePrint
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
 
@@ -17,6 +18,7 @@ CORS(app)
 # Registra blueprints
 app.register_blueprint(authBluePrint)
 app.register_blueprint(serviceBluePrint)
+app.register_blueprint(projectBluePrint)
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=6002, debug=True, threaded=True)

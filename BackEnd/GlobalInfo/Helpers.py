@@ -16,7 +16,7 @@ from unidecode import unidecode
 # Connection for DB
 def dbConnection():
     if connectKeys.dbconn == None:
-        connectKeys.dbconn = MongoClient(connectKeys.strConnection).LinkThinks
+        connectKeys.dbconn = MongoClient(connectKeys.strConnection).OpenUP
     return connectKeys.dbconn
 
 def PrintException():
