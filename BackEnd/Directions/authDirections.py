@@ -14,7 +14,7 @@ def login():
     try:
         
         strEmail = "" if("strEmail" not in request.json) else request.json['strEmail']
-        strPassword = "" if("strPassword" not in request.json) else request.json['strPassword']
+        strPassword = "" if("strPassword" not in request.json) else request.json['strPassword'] 
         
         required_validation = any(str(x).strip() == '' for x in [strEmail, strPassword])
         if required_validation:

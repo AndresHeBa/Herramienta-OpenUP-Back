@@ -67,7 +67,7 @@ def postProject():
             active=active
         )
 
-        return jsonify(objResult), 201
+        return ResponseMessage.message200
 
     except Exception:
         HelperFunctions.PrintException()
