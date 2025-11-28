@@ -1,0 +1,160 @@
+# Contexto del Proyecto: Migración de Sistema Legacy PHP a Stack Moderno
+
+Estoy trabajando en un proyecto de migración que traslada un sistema legacy PHP a un stack moderno. Necesito tu ayuda para entender, traducir y migrar código siguiendo los patrones establecidos.
+
+## OBJETIVO DEL PROYECTO
+
+**Migración del Sistema Legacy:**
+- **Sistema Legacy (PHP)**: `s2c.50/` - Sistema de originación y gestión de solicitudes de crédito construido en PHP con Doctrine DBAL y Twig templates
+- **Backend Moderno (Flask)**: `flask-cotizador/` - API REST en Python 3.x + Flask + MySQL + JWT
+- **Frontend Moderno (Angular 18)**: `angular18-structure/` - Aplicación SPA con Angular 18, TypeScript strict, Angular Material
+
+**Objetivo**: Migrar funcionalidades del sistema PHP legacy (clases como `ProcesosLib`, `SolicitudesLib`, etc.) a:
+1. Endpoints Flask siguiendo la arquitectura modular (Directions → Functions → Entity)
+2. Componentes y servicios Angular 18 siguiendo la estructura modular con lazy loading
+
+## ESTRUCTURA DEL PROYECTO PHP LEGACY
+
+El sistema legacy (`s2c.50/`) contiene diferentes módulos que separas funcionalidades en un tipo de modelo MVC, habiendo controladores, vistas en html.twig y archivos de funciones, mayormente.
+Dejo un ejemplo a continuación: 
+
+- **Módulo `org/`**: Originación de créditos
+  - `controller/ProcesosLib.php`: Gestión de procesos de solicitudes (autorizaciones, formalización, buro de crédito, etc.)
+  - `controller/SolicitudesLib.php`: Gestión de solicitudes y prospectos
+  - `controller/ProcesosChecklistLib.php`: Procesos de checklist
+  - Varios otros controladores especializados (Dictaminación, Buro Crédito, Autorización, etc.)
+
+- **Patrón Legacy PHP**:
+  
+  class ProcesosLib {
+      private $conn;
+      public function __construct() {
+          global $em;
+          $this->conn = $em->getConnection();
+      }
+      
+      public function metodoAction() {
+          $Query = "SELECT ...";
+          $rs = $this->conn->fetchAssoc($Query);
+          // Lógica de negocio
+      }
+  }
+  - **Características**:
+  - Usa Doctrine DBAL para conexiones MySQL
+  - Sesiones PHP (`$_SESSION`)
+  - Templates Twig para vistas
+  - Variables globales (`$em`, `$twig`)
+  - Consultas SQL directas sin ORM
+
+## REGLAS DE TRADUCCIÓN Y MIGRACIÓN
+
+**Para Backend (PHP → Flask):**
+
+1. **Clase PHP → Función en `callMethod.py`**:
+   - Los métodos públicos de las clases PHP se convierten en funciones en el módulo `functions/callMethod.py`
+   - Ejemplo: `ProcesosLib::metodoAction()` → `def metodo_action(data: Dict) -> Dict:`
+
+2. **Conexión a BD**:
+   - PHP: `global $em; $this->conn = $em->getConnection();`
+   - Flask: `MysqlCnx = connectKeys.getConnectionMYSQL(); cursor = MysqlCnx.cursor(pymysql.cursors.DictCursor)`
+
+3. **Consultas SQL**:
+   - Mantener la misma lógica SQL pero usar parámetros preparados en Python
+   - PHP: `$this->conn->fetchAssoc($Query)`
+   - Flask: `cursor.execute(query, params); result = cursor.fetchone()`
+
+4. **Sesiones**:
+   - PHP: `$_SESSION["ID_USR"]`
+   - Flask: Obtener desde JWT claims: `claims = get_jwt(); user_id = claims.get("id_usuario")`
+
+5. **Respuestas**:
+   - Convertir a formato estándar: `{"intResponse": "200", "strAnswer": "...", "Result": {...}}`
+   - Usar códigos HTTP según `context.md` (200, 203, 401, 402, 403, 422, 500)
+
+6. **Endpoints**:
+   - Crear blueprint en `cotizador/directions/routes.py`
+   - Seguir patrón: `@blueprint.route('/endpoint'), @jwt_required(), validate_jwt()`
+
+**Para Frontend (PHP/Twig → Angular 18):**
+
+1. **Templates Twig → Componentes Angular**:
+   - Crear componentes en módulos apropiados (`administration/`, `applications/`, etc.)
+   - Usar Angular Material para UI cuando sea posible
+
+2. **Lógica de Presentación**:
+   - PHP Controller logic → TypeScript en componente
+   - Variables Twig `{{ variable }}` → Interpolación Angular `{{ variable }}`
+
+3. **Comunicación con API**:
+   - Crear servicios en `services/` siguiendo el patrón establecido
+   - Usar `HttpClient` con tipado fuerte
+   - Manejar respuestas usando interfaces `Response<T>` y `ResponseList<T>`
+
+4. **Formularios**:
+   - Convertir formularios PHP a Reactive Forms
+   - Usar `FormBuilder` y validadores
+
+5. **Navegación**:
+   - Rutas PHP → Rutas Angular con lazy loading
+   - Usar `Router` para navegación programática
+
+## PATRONES DE CÓDIGO A SEGUIR
+
+Consulta el archivo `.cursor/context.md` que contiene:
+- **Backend**: Patrones Flask, estructura de módulos, respuestas estándar, validación JWT
+- **Frontend**: Patrones Angular 18, estructura modular, servicios, componentes, routing
+
+**Reglas Específicas:**
+
+1. **Nomenclatura**:
+   - PHP: camelCase para métodos (`metodoAction`)
+   - Flask: snake_case para funciones (`metodo_action`)
+   - Angular: PascalCase para clases, camelCase para métodos
+
+2. **Type Safety**:
+   - Flask: Usar type hints (`Dict`, `List`, `Optional`)
+   - Angular: TypeScript strict mode, tipar todo
+
+3. **Manejo de Errores**:
+   - Flask: Retornar códigos HTTP apropiados con mensajes estándar
+   - Angular: Usar SweetAlert2 para notificaciones, manejar errores 401/402
+
+4. **Base de Datos**:
+   - Siempre cerrar conexiones en `finally`
+   - Usar parámetros preparados (no concatenación)
+   - DictCursor para resultados como diccionarios
+
+## TAREAS TÍPICAS DE MIGRACIÓN
+
+1. **Migrar un endpoint PHP → Flask**:
+   - Identificar la clase y método PHP
+   - Crear función en `callMethod.py` con la lógica
+   - Crear endpoint en `routes.py` con validación JWT
+   - Probar con Postman/curl
+
+2. **Migrar una vista PHP/Twig → Angular**:
+   - Analizar el template Twig y su controlador
+   - Crear componente Angular con su servicio
+   - Mapear datos del backend Flask
+   - Implementar formularios/navegación necesarios
+
+3. **Migrar lógica de negocio compleja**:
+   - Identificar dependencias entre clases PHP
+   - Traducir a funciones Flask manteniendo la misma lógica
+   - Documentar cambios importantes
+
+
+## INFORMACIÓN IMPORTANTE
+
+- **Base de Datos**: MySQL (misma BD para legacy y nuevo sistema durante migración)
+- **Autenticación**: Legacy usa sesiones PHP, nuevo sistema usa JWT
+- **Archivos**: Legacy usa sistema de archivos local, nuevo sistema usa AWS S3
+- **Documentación**: El archivo `.cursor/context.md` es la fuente de verdad para patrones y convenciones
+
+--- PRIMERA ACCIÓN ---
+
+En la raíz del proyecto, crea una nueva carpeta que contenga la estructura típica para un proyecto con Flask python con un solo blueprint,
+ y una carpeta para crear un proyecto que usa Angular 18 con módulos, no standalone.
+Básate en el archivo context.md
+
+Después de análizar los requerimientos previos. ¿Estás listo para ayudarme con la migración? Puedo mostrarte código específico que necesito traducir.

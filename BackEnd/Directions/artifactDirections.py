@@ -7,7 +7,7 @@ import BackEnd.Functions.artifactFunctions as callMethod
 artifactBluePrint = Blueprint('artifactBluePrint', __name__, url_prefix='/api/artifacts')
 
 
-@artifactBluePrint.post('/upload')
+@artifactBluePrint.post('/uploadArtifact')
 def uploadArtifact():
     try:
         file = request.files.get('file')
@@ -59,20 +59,24 @@ def uploadArtifact():
 
 
 
-    @artifactBluePrint.get('/list')
-    def getArtifactList():
-        try:
-            projectId = request.args.get('projectId')
-            phase = request.args.get('phase')
+@artifactBluePrint.get('/getArtifacts')
+def getArtifactList():
+    try:
+        projectId = request.args.get('projectId')
+        phase = request.args.get('phase')
+        
+        print("Received projectId:", projectId)
+        print("Received phase:", phase)
 
-            if not projectId:
-                return {**ResponseMessage.message422, "data": "projectId is required"}
+        if not projectId:
+            return {**ResponseMessage.message422, "data": "projectId is required"}
 
-            result = callMethod.fnGetArtifacts(projectId, phase)
-            return jsonify(result)
-        except Exception:
-            HelperFunctions.PrintException()
-            return ResponseMessage.message500
+        result = callMethod.fnGetArtifacts(projectId, phase)
+        print("Artifacts fetched:", result)
+        return jsonify(result)
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
 
 
 @artifactBluePrint.get('/history/<projectId>/<artifactType>')
