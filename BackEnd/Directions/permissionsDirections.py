@@ -64,7 +64,7 @@ def getRoles():
 
 
 @permissionsBluePrint.post('/roles')
-@permissions.requireAdmin
+#@permissions.requireAdmin
 def createRole():
     try:
         body = request.get_json() or {}
@@ -80,6 +80,18 @@ def createRole():
 def deleteRole(name):
     try:
         result = callMethod.fnDeleteRole(name)
+        return jsonify(result)
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
+
+@permissionsBluePrint.patch('/roles/<name>')
+@permissions.requireAdmin
+def updateRole(name):
+    try:
+        body = request.get_json() or {}
+        result = callMethod.fnUpdateRole(name, body)
         return jsonify(result)
     except Exception:
         HelperFunctions.PrintException()

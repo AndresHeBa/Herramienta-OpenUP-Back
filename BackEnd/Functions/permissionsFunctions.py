@@ -180,3 +180,33 @@ def fnGetAllowedRoles(action):
     except Exception:
         HelperFunctions.PrintException()
         return []
+
+
+def fnUpdateRole(name, role_obj):
+    try:
+        if not name:
+            return ResponseMessage.message422
+
+        update_fields = {}
+        if 'displayName' in role_obj:
+            update_fields['displayName'] = role_obj.get('displayName')
+        if 'description' in role_obj:
+            update_fields['description'] = role_obj.get('description')
+
+        if _use_db():
+            updated = dbConnLocal.clRoles.update_one({"name": name}, {"$set": update_fields})
+            doc = dbConnLocal.clRoles.find_one({"name": name})
+            if not doc:
+                return {**ResponseMessage.message404, "data": "Role not found"}
+            doc["_id"] = str(doc.get("_id"))
+            return {**ResponseMessage.message200, "data": doc}
+
+        # in-memory update
+        for r in _ROLES_STORE:
+            if r.get('name') == name:
+                r.update(update_fields)
+                return {**ResponseMessage.message200, "data": r}
+        return {**ResponseMessage.message404, "data": "Role not found"}
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
