@@ -49,13 +49,13 @@ def fnAssignArtifactToWorkflow(projectId, artifactType, workflowId):
         if not projectId or not artifactType or not workflowId:
             return ResponseMessage.message422
 
-        # Verify workflow exists
+        # Verify workflow exists and is active
         if not ObjectId.is_valid(workflowId):
              return {**ResponseMessage.message422, "data": "Invalid workflowId"}
              
-        workflow = dbConnLocal.clWorkflows.find_one({"_id": ObjectId(workflowId)})
+        workflow = dbConnLocal.clWorkflows.find_one({"_id": ObjectId(workflowId), "isActive": True})
         if not workflow:
-            return {**ResponseMessage.message404, "data": "Workflow not found"}
+            return {**ResponseMessage.message404, "data": "Workflow not found or inactive"}
 
         # Upsert assignment config
         # This defines that for a given project and artifact type, this workflow applies
@@ -93,6 +93,22 @@ def fnUpdateArtifactState(artifactId, newState, userId, comments=None):
         if not artifact:
             return {**ResponseMessage.message404, "data": "Artifact not found"}
 
+        # Verify artifact has an active workflow assigned (optional check)
+        projectId = artifact.get("projectId")
+        artifactType = artifact.get("artifactType")
+        if projectId and artifactType:
+            assignment = dbConnLocal.clArtifactWorkflowAssignments.find_one({
+                "projectId": projectId,
+                "artifactType": artifactType
+            })
+            if assignment:
+                workflow = dbConnLocal.clWorkflows.find_one({
+                    "_id": ObjectId(assignment["workflowId"]),
+                    "isActive": True
+                })
+                if not workflow:
+                    return {**ResponseMessage.message404, "data": "Assigned workflow is inactive or not found"}
+
         # Record history
         history_entry = {
             "artifactId": artifactId,
@@ -128,6 +144,75 @@ def fnGetArtifactWorkflowHistory(artifactId):
             h["_id"] = str(h["_id"])
             
         return {**ResponseMessage.message200, "Result": history}
+
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
+
+def fnUpdateWorkflow(workflowId, name=None, description=None, states=None):
+    try:
+        if not workflowId:
+            return ResponseMessage.message422
+
+        if not ObjectId.is_valid(workflowId):
+            return {**ResponseMessage.message422, "data": "Invalid workflowId"}
+
+        workflow = dbConnLocal.clWorkflows.find_one({"_id": ObjectId(workflowId), "isActive": True})
+        if not workflow:
+            return {**ResponseMessage.message404, "data": "Workflow not found or inactive"}
+
+        # Build update object with only provided fields
+        update_fields = {"updatedAt": datetime.now()}
+        
+        if name:
+            update_fields["name"] = name
+        if description is not None:  # Allow empty string
+            update_fields["description"] = description
+        if states is not None:
+            if not isinstance(states, list):
+                return {**ResponseMessage.message422, "data": "States must be a list"}
+            update_fields["states"] = states
+
+        # Update workflow
+        dbConnLocal.clWorkflows.update_one(
+            {"_id": ObjectId(workflowId)},
+            {"$set": update_fields}
+        )
+
+        # Update workflowName in assignments if name changed
+        if name:
+            dbConnLocal.clArtifactWorkflowAssignments.update_many(
+                {"workflowId": workflowId},
+                {"$set": {"workflowName": name, "updatedAt": datetime.now()}}
+            )
+
+        return {**ResponseMessage.message200, "message": "Workflow updated successfully"}
+
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
+
+def fnDeleteWorkflow(workflowId):
+    try:
+        if not workflowId:
+            return ResponseMessage.message422
+
+        if not ObjectId.is_valid(workflowId):
+            return {**ResponseMessage.message422, "data": "Invalid workflowId"}
+
+        workflow = dbConnLocal.clWorkflows.find_one({"_id": ObjectId(workflowId)})
+        if not workflow:
+            return {**ResponseMessage.message404, "data": "Workflow not found"}
+
+        # Soft delete: marcar como inactivo
+        dbConnLocal.clWorkflows.update_one({"_id": ObjectId(workflowId)}, {"$set": {"isActive": False, "deletedAt": datetime.now()}})
+
+        # Opcional: eliminar (o desasignar) asignaciones relacionadas
+        dbConnLocal.clArtifactWorkflowAssignments.delete_many({"workflowId": workflowId})
+
+        return {**ResponseMessage.message200, "message": "Workflow deleted (soft-delete) successfully"}
 
     except Exception:
         HelperFunctions.PrintException()

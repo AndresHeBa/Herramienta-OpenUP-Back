@@ -170,3 +170,28 @@ def getMandatoryArtifactTypes():
     except Exception:
         HelperFunctions.PrintException()
         return ResponseMessage.message500
+
+
+@artifactBluePrint.put('/updateArtifactState/<artifactId>')
+def updateArtifactState(artifactId):
+    try:
+        body = request.get_json() or {}
+        workflowId = body.get('workflowId')
+        state = body.get('state', '').strip()
+        assignedTo = body.get('assignedTo', [])
+        userId = body.get('userId', '').strip()
+        comments = body.get('comments', '').strip()
+
+        result = callMethod.fnUpdateArtifactState(
+            artifactId=artifactId,
+            workflowId=workflowId,
+            state=state,
+            assignedTo=assignedTo,
+            userId=userId,
+            comments=comments
+        )
+        return jsonify(result)
+
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
