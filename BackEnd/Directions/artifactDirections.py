@@ -51,6 +51,7 @@ def uploadArtifact():
             observations=request.form.get('observations', '').strip()
         )
 
+        print("Artifact uploaded:", result)
         return jsonify(result)
 
     except Exception:
@@ -72,7 +73,7 @@ def getArtifactList():
             return {**ResponseMessage.message422, "data": "projectId is required"}
 
         result = callMethod.fnGetArtifacts(projectId, phase)
-        print("Artifacts fetched:", result)
+        # print("Artifacts fetched:", result)
         return jsonify(result)
     except Exception:
         HelperFunctions.PrintException()
@@ -128,6 +129,43 @@ def compareArtifactVersions():
             return ResponseMessage.message422
 
         result = callMethod.fnCompareArtifactVersions(projectId, artifactType, v1, v2)
+        return jsonify(result)
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
+
+@artifactBluePrint.put('/updateMandatoryStatus')
+def updateMandatoryStatus():
+    try:
+        body = request.get_json() or {}
+        update_list = body.get('updateList')
+        
+        if not update_list or not isinstance(update_list, list):
+            return {**ResponseMessage.message422, "data": "Expected 'updateList' array in body"}
+
+        result = callMethod.fnUpdateMandatoryStatus(update_list)
+        return jsonify(result)
+
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
+
+@artifactBluePrint.get('/getArtifactTypes')
+def getArtifactTypes():
+    try:
+        result = callMethod.fnGetArtifactTypes()
+        return jsonify(result)
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
+
+@artifactBluePrint.get('/getMandatoryArtifactTypes')
+def getMandatoryArtifactTypes():
+    try:
+        result = callMethod.fnGetMandatoryArtifactTypes()
         return jsonify(result)
     except Exception:
         HelperFunctions.PrintException()

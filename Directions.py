@@ -9,6 +9,7 @@ from BackEnd.Directions.planDirections import planBluePrint
 from BackEnd.Directions.artifactDirections import artifactBluePrint
 from BackEnd.Directions.microDirections import microBluePrint
 from BackEnd.Directions.progressDirections import progressBluePrint
+from BackEnd.Directions.workflowDirections import workflowBluePrint
 
 app = Flask(__name__, static_url_path='/static', static_folder='static')
 
@@ -26,6 +27,7 @@ app.register_blueprint(planBluePrint)
 app.register_blueprint(artifactBluePrint)
 app.register_blueprint(microBluePrint)
 app.register_blueprint(progressBluePrint)
+app.register_blueprint(workflowBluePrint)
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=6002, debug=True, threaded=True)

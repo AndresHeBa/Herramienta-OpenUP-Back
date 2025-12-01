@@ -258,3 +258,86 @@ def fnCompareArtifactVersions(projectId, artifactType, v1, v2):
         HelperFunctions.PrintException()
         return ResponseMessage.message500
 
+
+def fnUpdateMandatoryStatus(updateList):
+    """
+    HU-011: Update mandatory/optional status for a list of artifact types.
+    This updates all artifacts with the specified types across all projects and phases.
+    """
+    try:
+        updated_count = 0
+        errors = []
+
+        for item in updateList:
+            artifactType = item.get('artifactType')
+            isMandatory = item.get('isMandatory')
+            # Validate that the artifact type exists
+            existing = dbConnLocal.clArtifactTypes.find_one({
+                "artifactType": artifactType
+            })
+
+            if not existing:
+                errors.append(f"Artifact type not found: {artifactType}")
+                continue
+
+            # Update all artifacts with this type across all projects and phases
+            result = dbConnLocal.clArtifactTypes.update_many(
+                {
+                    "artifactType": artifactType
+                },
+                {
+                    "$set": {
+                        "isMandatory": isMandatory,
+                        "updatedAt": datetime.now()
+                    }
+                }
+            )
+            
+            if result.modified_count > 0:
+                updated_count += 1
+
+            # Also update the REQUIRED_ARTIFACTS dictionary for all phases
+            for phase_key in REQUIRED_ARTIFACTS:
+                for artifact in REQUIRED_ARTIFACTS[phase_key]:
+                    if artifact["type"] == artifactType:
+                        artifact["mandatory"] = isMandatory
+
+        return {
+            **ResponseMessage.message200,
+            "message": "Bulk update processed",
+            "updatedTypesCount": updated_count,
+            "errors": errors
+        }
+
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
+
+def fnGetArtifactTypes():
+    try:
+        results = list(dbConnLocal.clArtifactTypes.find())
+        
+        for res in results:
+            res["_id"] = str(res["_id"])
+            
+        return {**ResponseMessage.message200, "Result": results}
+
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
+
+def fnGetMandatoryArtifactTypes():
+    try:
+        results = list(dbConnLocal.clArtifactTypes.find({"isMandatory": True}))
+        
+        for res in results:
+            res["_id"] = str(res["_id"])
+            
+        return {**ResponseMessage.message200, "Result": results}
+
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+

@@ -1,0 +1,74 @@
+from flask import Blueprint, jsonify, request
+import BackEnd.GlobalInfo.ResponseMessages as ResponseMessage
+import BackEnd.GlobalInfo.Helpers as HelperFunctions
+import BackEnd.Functions.workflowFunctions as callMethod
+
+workflowBluePrint = Blueprint('workflowBluePrint', __name__, url_prefix='/api/workflow')
+
+@workflowBluePrint.post('/createWorkflow')
+def createWorkflow():
+    try:
+        body = request.get_json() or {}
+        name = body.get('name', '').strip()
+        description = body.get('description', '').strip()
+        states = body.get('states')
+
+        result = callMethod.fnCreateWorkflow(name, description, states)
+        return jsonify(result)
+
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
+
+@workflowBluePrint.get('/getWorkflows')
+def getWorkflows():
+    try:
+        result = callMethod.fnGetWorkflows()
+        return jsonify(result)
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
+
+@workflowBluePrint.post('/assignArtifactToWorkflow')
+def assignArtifactToWorkflow():
+    try:
+        body = request.get_json() or {}
+        projectId = body.get('projectId', '').strip()
+        artifactType = body.get('artifactType', '').strip()
+        workflowId = body.get('workflowId', '').strip()
+
+        result = callMethod.fnAssignArtifactToWorkflow(projectId, artifactType, workflowId)
+        return jsonify(result)
+
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
+
+@workflowBluePrint.put('/updateArtifactState')
+def updateArtifactState():
+    try:
+        body = request.get_json() or {}
+        artifactId = body.get('artifactId', '').strip()
+        newState = body.get('newState', '').strip()
+        userId = body.get('userId', '').strip()
+        comments = body.get('comments', '').strip()
+
+        result = callMethod.fnUpdateArtifactState(artifactId, newState, userId, comments)
+        return jsonify(result)
+
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
+
+@workflowBluePrint.get('/getArtifactWorkflowHistory/<artifactId>')
+def getArtifactWorkflowHistory(artifactId):
+    try:
+        result = callMethod.fnGetArtifactWorkflowHistory(artifactId)
+        return jsonify(result)
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
