@@ -1,7 +1,7 @@
 dbconn = None
 
 # MongoDB
-strConnection = "mongodb://localhost:27017/"
+strConnection = 'mongodb://localhost:27017/'
 
 #NEW
 import os

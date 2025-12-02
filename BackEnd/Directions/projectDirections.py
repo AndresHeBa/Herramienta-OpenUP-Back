@@ -8,7 +8,7 @@ import BackEnd.GlobalInfo.Helpers as HelperFunctions
 
 #Functions import
 import BackEnd.Functions.projectFunctions as callMethod
-
+from bson import ObjectId
 
 def _normalize_json_body():
     """
@@ -74,12 +74,21 @@ def postProject():
         return ResponseMessage.message500
 
 
+def convert_objectid(data):
+    """Convierte ObjectId a string recursivamente"""
+    if isinstance(data, list):
+        return [convert_objectid(item) for item in data]
+    elif isinstance(data, dict):
+        return {key: convert_objectid(value) for key, value in data.items()}
+    elif isinstance(data, ObjectId):
+        return str(data)
+    return data
+
 @projectBluePrint.get('/getProjectList')
 def getProjectList():
     try:
-
         objResult = callMethod.fnGetProjectList()
-
+        objResult = convert_objectid(objResult)
         return jsonify(objResult)
     
     except Exception:

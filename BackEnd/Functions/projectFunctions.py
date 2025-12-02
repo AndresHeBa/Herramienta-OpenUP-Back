@@ -71,8 +71,6 @@ def fnGetService(strServiceId):
 
 def fnGetProjectList():
     try:
-        
-        
         dbResult = list(dbConnLocal.clProjects.find({}))
         count = dbConnLocal.clProjects.count_documents({})
         
