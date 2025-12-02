@@ -3,7 +3,7 @@ import BackEnd.GlobalInfo.ResponseMessages as ResponseMessage
 import BackEnd.GlobalInfo.Helpers as HelperFunctions
 import BackEnd.Functions.workflowFunctions as callMethod
 
-workflowBluePrint = Blueprint('workflowBluePrint', __name__, url_prefix='/api/workflow')
+workflowBluePrint = Blueprint('workflowBluePrint', __name__, url_prefix='/api/workflows')
 
 @workflowBluePrint.post('/createWorkflow')
 def createWorkflow():
@@ -68,6 +68,32 @@ def updateArtifactState():
 def getArtifactWorkflowHistory(artifactId):
     try:
         result = callMethod.fnGetArtifactWorkflowHistory(artifactId)
+        return jsonify(result)
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
+
+@workflowBluePrint.put('/updateWorkflow/<workflowId>')
+def updateWorkflow(workflowId):
+    try:
+        body = request.get_json() or {}
+        name = body.get('name', '').strip()
+        description = body.get('description', '').strip()
+        states = body.get('states')
+
+        result = callMethod.fnUpdateWorkflow(workflowId, name, description, states)
+        return jsonify(result)
+
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
+
+@workflowBluePrint.delete('/deleteWorkflow/<workflowId>')
+def deleteWorkflow(workflowId):
+    try:
+        result = callMethod.fnDeleteWorkflow(workflowId)
         return jsonify(result)
     except Exception:
         HelperFunctions.PrintException()

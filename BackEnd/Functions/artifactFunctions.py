@@ -341,3 +341,76 @@ def fnGetMandatoryArtifactTypes():
         HelperFunctions.PrintException()
         return ResponseMessage.message500
 
+
+def fnUpdateArtifactState(artifactId, workflowId=None, state=None, assignedTo=None, userId=None, comments=None):
+    """
+    HU-012: Update artifact workflow state and/or assign workflow.
+    Can be used to:
+    1. Assign a workflow to an artifact (provide workflowId + initial state)
+    2. Update state within existing workflow (provide state only)
+    3. Update both workflow and state
+    """
+    try:
+        if not artifactId:
+            return ResponseMessage.message422
+
+        if not ObjectId.is_valid(artifactId):
+            return {**ResponseMessage.message422, "data": "Invalid artifactId"}
+
+        # Verify artifact exists
+        artifact = dbConnLocal.clArtifacts.find_one({"_id": ObjectId(artifactId)})
+        if not artifact:
+            return {**ResponseMessage.message404, "data": "Artifact not found"}
+
+        update_fields = {"updatedAt": datetime.now()}
+        history_entry = {
+            "artifactId": artifactId,
+            "userId": userId,
+            "comments": comments,
+            "timestamp": datetime.now()
+        }
+
+        # If workflowId is provided, assign or update workflow
+        if workflowId:
+            if not ObjectId.is_valid(workflowId):
+                return {**ResponseMessage.message422, "data": "Invalid workflowId"}
+            
+            workflow = dbConnLocal.clWorkflows.find_one({"_id": ObjectId(workflowId), "isActive": True})
+            if not workflow:
+                return {**ResponseMessage.message404, "data": "Workflow not found or inactive"}
+
+            previous_workflow = artifact.get("currentWorkflowId") or artifact.get("workflowId")
+            update_fields["currentWorkflowId"] = workflowId
+            update_fields["workflowName"] = workflow.get("name")
+            history_entry["previousWorkflowId"] = previous_workflow
+            history_entry["newWorkflowId"] = workflowId
+
+        # If state is provided, update state
+        if state:
+            previous_state = artifact.get("currentState") or artifact.get("status")
+            update_fields["currentState"] = state
+            update_fields["status"] = state  # Keep both for backward compatibility
+            history_entry["previousState"] = previous_state
+            history_entry["newState"] = state
+
+        # If assignedTo is provided, update assignment
+        if assignedTo is not None:
+            update_fields["assignedTo"] = assignedTo
+            history_entry["assignedTo"] = assignedTo
+
+        # Record history only if there are actual changes
+        if "previousState" in history_entry or "previousWorkflowId" in history_entry:
+            dbConnLocal.clArtifactStateHistory.insert_one(history_entry)
+
+        # Update artifact
+        dbConnLocal.clArtifacts.update_one(
+            {"_id": ObjectId(artifactId)},
+            {"$set": update_fields}
+        )
+
+        return {**ResponseMessage.message200, "message": "Artifact state updated successfully"}
+
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
