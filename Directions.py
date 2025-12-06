@@ -5,6 +5,7 @@ from flask_cors import CORS
 from BackEnd.Directions.authDirections import authBluePrint
 from BackEnd.Directions.serviceDirections import serviceBluePrint
 from BackEnd.Directions.projectDirections import projectBluePrint
+from BackEnd.Directions.IteracionesDirections import IteracionesBluePrint
 from BackEnd.Directions.planDirections import planBluePrint
 from BackEnd.Directions.artifactDirections import artifactBluePrint
 from BackEnd.Directions.permissionsDirections import permissionsBluePrint
@@ -29,6 +30,7 @@ app._check_setup_finished = _no_check
 app.register_blueprint(authBluePrint)
 app.register_blueprint(serviceBluePrint)
 app.register_blueprint(projectBluePrint)
+app.register_blueprint(IteracionesBluePrint)
 app.register_blueprint(planBluePrint)
 app.register_blueprint(artifactBluePrint)
 app.register_blueprint(permissionsBluePrint)
