@@ -4,11 +4,13 @@ progressBluePrint = Blueprint('progressBluePrint', __name__, url_prefix='/api/pr
 
 import BackEnd.GlobalInfo.ResponseMessages as ResponseMessage
 import BackEnd.GlobalInfo.Helpers as HelperFunctions
+from BackEnd.GlobalInfo.permissions import requireAction
 
 import BackEnd.Functions.progressFunctions as callMethod
 
 
 @progressBluePrint.post('/postProgress')
+@requireAction('create')
 def postProgress():
     try:
         body = request.get_json() or {}
@@ -53,6 +55,7 @@ def getProgress(projectId):
 
 
 @progressBluePrint.put('/updateProgress')
+@requireAction('edit')
 def updateProgress():
     try:
         body = request.get_json() or {}

@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import request, jsonify
+from flask import request, jsonify, session
 import BackEnd.Functions.permissionsFunctions as permFuncs
 import BackEnd.GlobalInfo.ResponseMessages as ResponseMessage
 import BackEnd.GlobalInfo.Helpers as HelperFunctions
@@ -9,17 +9,24 @@ _CACHE = {}
 
 
 def _get_user_roles():
-    # try request.user (if auth middleware sets it)
+    # PRIORIDAD 1: Header 'X-User-Roles' (más confiable con CORS)
+    header = request.headers.get('X-User-Roles')
+    if header:
+        roles = [r.strip() for r in header.split(',') if r.strip()]
+        return roles
+    
+    # PRIORIDAD 2: Sesión de Flask
+    if 'roles' in session:
+        roles = session.get('roles')
+        if isinstance(roles, list):
+            return [r for r in roles]
+    
+    # PRIORIDAD 3: request.user (si algún middleware lo establece)
     user = getattr(request, 'user', None)
     if user and isinstance(user, dict):
         roles = user.get('roles')
         if isinstance(roles, list):
             return [r for r in roles]
-
-    # fallback to header 'X-User-Roles' as comma separated
-    header = request.headers.get('X-User-Roles')
-    if header:
-        return [r.strip() for r in header.split(',') if r.strip()]
 
     return None
 

@@ -3,11 +3,13 @@ from werkzeug.utils import secure_filename
 import BackEnd.GlobalInfo.ResponseMessages as ResponseMessage
 import BackEnd.GlobalInfo.Helpers as HelperFunctions
 import BackEnd.Functions.artifactFunctions as callMethod
+from BackEnd.GlobalInfo.permissions import requireAction, requireAdmin
 
 artifactBluePrint = Blueprint('artifactBluePrint', __name__, url_prefix='/api/artifacts')
 
 
 @artifactBluePrint.post('/uploadArtifact')
+@requireAction('create')
 def uploadArtifact():
     try:
         file = request.files.get('file')
@@ -100,6 +102,7 @@ def getArtifactHistory(projectId, artifactType):
 
 
 @artifactBluePrint.put('/restoreVersion')
+@requireAction('edit')
 def restoreArtifactVersion():
     try:
         body = request.get_json() or {}
@@ -136,6 +139,7 @@ def compareArtifactVersions():
 
 
 @artifactBluePrint.put('/updateMandatoryStatus')
+@requireAdmin
 def updateMandatoryStatus():
     try:
         body = request.get_json() or {}
@@ -173,6 +177,7 @@ def getMandatoryArtifactTypes():
 
 
 @artifactBluePrint.put('/updateArtifactState/<artifactId>')
+@requireAction('change_state')
 def updateArtifactState(artifactId):
     try:
         body = request.get_json() or {}
@@ -190,6 +195,54 @@ def updateArtifactState(artifactId):
             userId=userId,
             comments=comments
         )
+        return jsonify(result)
+
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
+
+@artifactBluePrint.put('/reassignPhase/<artifactId>')
+@requireAction('reassign_artifact')
+def reassignArtifactPhase(artifactId):
+    """
+    HU-020: Reasignar entregables a etapas
+    Endpoint para mover un artefacto a una nueva fase
+    """
+    try:
+        body = request.get_json() or {}
+        new_phase = body.get('newPhase', '').strip()
+        user_id = body.get('userId', '').strip()
+        reason = body.get('reason', '').strip()
+        force = body.get('force', False)  # Para confirmar movimientos con advertencias
+
+        if not new_phase:
+            return jsonify({**ResponseMessage.message422, "message": "New phase is required"})
+
+        if not user_id:
+            return jsonify({**ResponseMessage.message422, "message": "User ID is required"})
+
+        result = callMethod.fnReassignArtifactPhase(
+            artifact_id=artifactId,
+            new_phase=new_phase,
+            user_id=user_id,
+            reason=reason
+        )
+        
+        return jsonify(result)
+
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
+
+@artifactBluePrint.get('/movementHistory/<artifactId>')
+def getArtifactMovementHistory(artifactId):
+    """
+    HU-020: Obtener historial de movimientos de un artefacto
+    """
+    try:
+        result = callMethod.fnGetArtifactMovementHistory(artifact_id=artifactId)
         return jsonify(result)
 
     except Exception:

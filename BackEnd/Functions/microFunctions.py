@@ -6,7 +6,8 @@ from bson.objectid import ObjectId
 dbConnLocal = HelperFunctions.dbConnection()
 
 
-def fnPostMicroincrement(projectId, iteration, deliverable, title, description, date, author):
+def fnPostMicroincrement(projectId, iteration, deliverable, title, description, date, author, 
+                        micro_type=None, evidence=None, value=None):
     try:
         micro = {
             "projectId": projectId,
@@ -17,7 +18,10 @@ def fnPostMicroincrement(projectId, iteration, deliverable, title, description, 
             "date": date,
             "author": author,
             "status": "Registrado",
-            "creationDate": datetime.now()
+            "creationDate": datetime.now(),
+            "type": micro_type or "funcional",  # Nuevo: técnico o funcional
+            "evidence": evidence or "",  # Nuevo: archivo o enlace
+            "value": value if value is not None else 0  # Nuevo: valor 0-10
         }
 
         micro = HelperFunctions.deleteBlankAttributes(micro)

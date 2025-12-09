@@ -180,3 +180,27 @@ def save_image_from_base64(b64: str) -> str:
         b64 = b64.split(",", 1)[1]
     data = base64.b64decode(b64)
     return save_image_bytes(data)
+
+
+# HU-024: Audit logging helper
+def logAudit(user_id, action_type, entity_type, entity_id, details=None, project_id=None):
+    """
+    Helper function para registrar acciones de auditoría
+    Usa import lazy para evitar dependencias circulares
+    
+    Args:
+        user_id: ID del usuario que realiza la acción (puede ser 'system')
+        action_type: Tipo de acción ('create', 'edit', 'delete', 'status_change', etc.)
+        entity_type: Tipo de entidad ('project', 'artifact', 'iteration', etc.)
+        entity_id: ID de la entidad
+        details: Dict con detalles adicionales
+        project_id: ID del proyecto relacionado
+    """
+    try:
+        # Import lazy para evitar circular imports
+        from BackEnd.Functions.auditFunctions import fnLogAuditAction
+        fnLogAuditAction(user_id, action_type, entity_type, entity_id, details, project_id)
+    except Exception:
+        # No fallar la operación principal si el logging falla
+        PrintException()
+        pass

@@ -1,0 +1,227 @@
+{
+  "exportDate": "2025-12-08T18:08:48.385321",
+  "exportVersion": "1.0",
+  "project": {
+    "_id": "6929d805c0f9030539ea51ab",
+    "name": "Pruebas",
+    "identifier": "P-002",
+    "startDate": "2025-11-28",
+    "description": "dsadad",
+    "responsible": "Jose Luis",
+    "tags": [
+      "kopkopkop"
+    ],
+    "status": "Creado",
+    "active": true,
+    "phases": [
+      {
+        "name": "Incepción",
+        "status": "Pendiente"
+      },
+      {
+        "name": "Elaboración",
+        "status": "Pendiente"
+      },
+      {
+        "name": "Construcción",
+        "status": "Pendiente"
+      },
+      {
+        "name": "Transición",
+        "status": "Pendiente"
+      }
+    ],
+    "creationDate": "2025-11-28T11:12:37.164000",
+    "modificationDate": "2025-12-08T13:29:26.186000",
+    "repositoryType": "git",
+    "repositoryUrl": "https://github.com/AndresHeBa/Herramienta-OpenUP-Front"
+  },
+  "artifacts": [
+    {
+      "_id": "692cb71a959aa0f215b9acf2",
+      "projectId": "P-002",
+      "phase": "Incepción",
+      "artifactType": "Documento de Visión",
+      "filename": "clock.png",
+      "filePath": "BackEnd/Uploads\\P-002\\Incepción\\Documento de Visión\\v1\\clock.png",
+      "version": 1,
+      "content": "",
+      "observations": "",
+      "fileType": "png",
+      "isDiagram": false,
+      "prototypeLink": "",
+      "externalLink": "",
+      "testEntries": null,
+      "author": "vcxvcx",
+      "uploadDate": "2025-11-30T21:28:58.415Z",
+      "isMandatory": false,
+      "status": "Pendiente",
+      "tags": [
+        "cxvcxv",
+        "gdfg"
+      ],
+      "createdAt": "2025-11-30T15:28:58.775000"
+    },
+    {
+      "_id": "692cbcdb959aa0f215b9acf3",
+      "projectId": "P-002",
+      "phase": "Incepción",
+      "artifactType": "Lista de Stakeholders",
+      "filename": "SCRUM-1_Export_20-11-2025.xlsx",
+      "filePath": "BackEnd/Uploads\\P-002\\Incepción\\Lista de Stakeholders\\v1\\SCRUM-1_Export_20-11-2025.xlsx",
+      "version": 1,
+      "content": "",
+      "observations": "",
+      "fileType": "xlsx",
+      "isDiagram": false,
+      "prototypeLink": "",
+      "externalLink": "",
+      "testEntries": null,
+      "author": "gfdg",
+      "uploadDate": "2025-11-30T21:53:31.813Z",
+      "isMandatory": false,
+      "status": "Pendiente",
+      "tags": [
+        "fdgg"
+      ],
+      "createdAt": "2025-11-30T15:53:31.844000"
+    },
+    {
+      "_id": "692cbcdc959aa0f215b9acf4",
+      "projectId": "P-002",
+      "phase": "Incepción",
+      "artifactType": "Lista de Riesgos Iniciales",
+      "filename": "DO-ST-FO-14_1.xls",
+      "filePath": "BackEnd/Uploads\\P-002\\Incepción\\Lista de Riesgos Iniciales\\v1\\DO-ST-FO-14_1.xls",
+      "version": 1,
+      "content": "",
+      "observations": "",
+      "fileType": "xls",
+      "isDiagram": false,
+      "prototypeLink": "",
+      "externalLink": "",
+      "testEntries": null,
+      "author": "rewr",
+      "uploadDate": "2025-11-30T21:53:31.847Z",
+      "isMandatory": false,
+      "status": "Pendiente",
+      "tags": [
+        "dsf"
+      ],
+      "createdAt": "2025-11-30T15:53:32.126000"
+    },
+    {
+      "_id": "692cbcdc959aa0f215b9acf5",
+      "projectId": "P-002",
+      "phase": "Incepción",
+      "artifactType": "Plan de Proyecto",
+      "filename": "Planeacion_Sprint_1.pdf",
+      "filePath": "BackEnd/Uploads\\P-002\\Incepción\\Plan de Proyecto\\v1\\Planeacion_Sprint_1.pdf",
+      "version": 1,
+      "content": "",
+      "observations": "",
+      "fileType": "pdf",
+      "isDiagram": false,
+      "prototypeLink": "",
+      "externalLink": "",
+      "testEntries": null,
+      "author": "dsfdsf",
+      "uploadDate": "2025-11-30T21:53:32.135Z",
+      "isMandatory": false,
+      "status": "Pendiente",
+      "tags": [
+        "dsfdf"
+      ],
+      "createdAt": "2025-11-30T15:53:32.165000"
+    },
+    {
+      "_id": "692cbcdc959aa0f215b9acf6",
+      "projectId": "P-002",
+      "phase": "Elaboración",
+      "artifactType": "Modelo de Casos de Uso de Alto Nivel",
+      "filename": "Transicion_-_TheBoys.pdf",
+      "filePath": "BackEnd/Uploads\\P-002\\Incepción\\Modelo de Casos de Uso de Alto Nivel\\v1\\Transicion_-_TheBoys.pdf",
+      "version": 1,
+      "content": "",
+      "observations": "",
+      "fileType": "pdf",
+      "isDiagram": false,
+      "prototypeLink": "",
+      "externalLink": "",
+      "testEntries": null,
+      "author": "fdsf",
+      "uploadDate": "2025-11-30T21:53:32.170Z",
+      "isMandatory": false,
+      "status": "Pendiente",
+      "tags": [
+        "sdfsdf"
+      ],
+      "createdAt": "2025-11-30T15:53:32.469000",
+      "lastModifiedAt": "2025-12-08T12:44:25.809000",
+      "lastModifiedBy": "anonymous"
+    },
+    {
+      "_id": "692cda858baa94440b94a175",
+      "projectId": "P-002",
+      "phase": "Incepción",
+      "artifactType": "Documento de Visión",
+      "filename": "Informacion_de_YAML.pdf",
+      "filePath": "BackEnd/Uploads\\P-002\\Incepción\\Documento de Visión\\v2\\Informacion_de_YAML.pdf",
+      "version": 2,
+      "content": "",
+      "observations": "fdfdsfdsfsfds",
+      "fileType": "pdf",
+      "isDiagram": false,
+      "prototypeLink": "",
+      "externalLink": "",
+      "testEntries": null,
+      "author": "vcxvcx",
+      "uploadDate": "2025-12-01T00:00:05.428Z",
+      "isMandatory": false,
+      "status": "dsadad",
+      "tags": [
+        "cxvcxv",
+        "gdfg"
+      ],
+      "createdAt": "2025-11-30T18:00:05.745000",
+      "assignedTo": [],
+      "currentState": "dsadad",
+      "currentWorkflowId": "692e04f027e4d195235c8ffc",
+      "updatedAt": "2025-12-01T18:13:05.251000",
+      "workflowName": "skjfdsahk"
+    },
+    {
+      "_id": "692e2f33a746206492f69dba",
+      "projectId": "P-002",
+      "phase": "Incepción",
+      "artifactType": "Documento de Visión",
+      "filename": "Documento_de_Visi_n_historial.pdf",
+      "filePath": "BackEnd/Uploads\\P-002\\Incepción\\Documento de Visión\\v3\\Documento_de_Visi_n_historial.pdf",
+      "version": 3,
+      "content": "",
+      "observations": "version 3",
+      "fileType": "pdf",
+      "isDiagram": false,
+      "prototypeLink": "",
+      "externalLink": "",
+      "testEntries": null,
+      "author": "vcxvcx",
+      "uploadDate": "2025-12-02T00:13:39.055Z",
+      "isMandatory": false,
+      "status": "Estado 1",
+      "tags": [
+        "cxvcxv",
+        "gdfg"
+      ],
+      "createdAt": "2025-12-01T18:13:39.400000",
+      "assignedTo": [],
+      "currentState": "Estado 1",
+      "currentWorkflowId": "692de8702c318c51e98b6e77",
+      "updatedAt": "2025-12-01T21:01:41.324000",
+      "workflowName": "Prueba 1"
+    }
+  ],
+  "iterations": [],
+  "microincrements": [],
+  "configuration": null
+}

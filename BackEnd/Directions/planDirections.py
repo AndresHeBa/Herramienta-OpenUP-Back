@@ -4,12 +4,14 @@ planBluePrint = Blueprint('planBluePrint', __name__, url_prefix='/api/plan')
 
 import BackEnd.GlobalInfo.ResponseMessages as ResponseMessage
 import BackEnd.GlobalInfo.Helpers as HelperFunctions
+from BackEnd.GlobalInfo.permissions import requireAction
 
 # Functions import
 import BackEnd.Functions.planFunctions as callMethod
 
 
 @planBluePrint.post('/postPlan')
+@requireAction('create')
 def postPlan():
     try:
         body = request.get_json() or {}
@@ -56,6 +58,7 @@ def getPlan(projectId):
 
 
 @planBluePrint.put('/updatePlan')
+@requireAction('edit')
 def updatePlan():
     try:
         body = request.get_json() or {}

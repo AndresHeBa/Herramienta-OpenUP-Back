@@ -3,6 +3,7 @@ from datetime import datetime
 from bson import ObjectId
 import BackEnd.GlobalInfo.ResponseMessages as ResponseMessage
 import BackEnd.GlobalInfo.Helpers as HelperFunctions
+import BackEnd.Functions.configurationFunctions as ConfigFunctions
 
 dbConnLocal = HelperFunctions.dbConnection()
 
@@ -96,6 +97,22 @@ def fnUploadArtifact(file, filename, projectId, phase, artifactType,
         }
 
         dbConnLocal.clArtifacts.insert_one(artifact)
+
+        # HU-024: Audit logging
+        HelperFunctions.logAudit(
+            user_id=author or 'system',
+            action_type='create',
+            entity_type='artifact',
+            entity_id=str(artifact['_id']),
+            details={
+                'artifactType': artifactType,
+                'phase': phase,
+                'version': newVersion,
+                'filename': filename,
+                'observations': observations
+            },
+            project_id=projectId
+        )
 
         return {
             **ResponseMessage.message200,
@@ -316,10 +333,12 @@ def fnUpdateMandatoryStatus(updateList):
 
 def fnGetArtifactTypes():
     try:
-        results = list(dbConnLocal.clArtifactTypes.find())
+        # Use adapter to read from active configuration
+        results = ConfigFunctions.fnGetArtifactTypesFromActiveConfig()
         
         for res in results:
-            res["_id"] = str(res["_id"])
+            if "_id" in res:
+                res["_id"] = str(res["_id"])
             
         return {**ResponseMessage.message200, "Result": results}
 
@@ -330,10 +349,13 @@ def fnGetArtifactTypes():
 
 def fnGetMandatoryArtifactTypes():
     try:
-        results = list(dbConnLocal.clArtifactTypes.find({"isMandatory": True}))
+        # Use adapter and filter mandatory
+        all_artifacts = ConfigFunctions.fnGetArtifactTypesFromActiveConfig()
+        results = [a for a in all_artifacts if a.get("isMandatory", False)]
         
         for res in results:
-            res["_id"] = str(res["_id"])
+            if "_id" in res:
+                res["_id"] = str(res["_id"])
             
         return {**ResponseMessage.message200, "Result": results}
 
@@ -408,9 +430,208 @@ def fnUpdateArtifactState(artifactId, workflowId=None, state=None, assignedTo=No
             {"$set": update_fields}
         )
 
+        # HU-024: Audit logging
+        HelperFunctions.logAudit(
+            user_id=userId or 'system',
+            action_type='status_change',
+            entity_type='artifact',
+            entity_id=artifactId,
+            details={
+                'previousState': history_entry.get('previousState'),
+                'newState': history_entry.get('newState'),
+                'workflowId': workflowId,
+                'assignedTo': assignedTo,
+                'comments': comments
+            },
+            project_id=artifact.get('projectId')
+        )
+
         return {**ResponseMessage.message200, "message": "Artifact state updated successfully"}
 
     except Exception:
         HelperFunctions.PrintException()
         return ResponseMessage.message500
 
+
+def fnReassignArtifactPhase(artifact_id, new_phase, user_id, reason=None):
+    """
+    Reasignar un artefacto a una nueva fase (HU-020)
+    - Conserva el historial de versiones y estados
+    - Registra el movimiento con usuario y fecha
+    - Valida reglas de negocio antes de mover
+    """
+    try:
+        if not ObjectId.is_valid(artifact_id):
+            return {**ResponseMessage.message422, "message": "Invalid artifact ID"}
+        
+        # Get the artifact
+        artifact = dbConnLocal.clArtifacts.find_one({"_id": ObjectId(artifact_id)})
+        
+        if not artifact:
+            return ResponseMessage.message404
+        
+        old_phase = artifact.get("phase")
+        project_id = artifact.get("projectId")
+        artifact_type = artifact.get("artifactType")
+        
+        # Validate if phase is actually changing
+        if old_phase == new_phase:
+            return {**ResponseMessage.message422, "message": "Artifact is already in this phase"}
+        
+        # Check for mandatory artifacts violations (e.g., moving to Transition without required artifacts)
+        validation_result = _validate_phase_reassignment(project_id, old_phase, new_phase, artifact_type)
+        
+        if not validation_result["allowed"]:
+            return {
+                **ResponseMessage.message422,
+                "message": validation_result["message"],
+                "requiresConfirmation": True,
+                "warnings": validation_result.get("warnings", [])
+            }
+        
+        # Create movement record
+        movement_record = {
+            "artifactId": str(artifact_id),
+            "projectId": project_id,
+            "artifactType": artifact_type,
+            "oldPhase": old_phase,
+            "newPhase": new_phase,
+            "movedBy": user_id,
+            "movedAt": datetime.now(),
+            "reason": reason or "Phase reassignment",
+            "version": artifact.get("version")
+        }
+        
+        dbConnLocal.clArtifactMovements.insert_one(movement_record)
+        
+        # Update artifact phase (preserve all history)
+        dbConnLocal.clArtifacts.update_one(
+            {"_id": ObjectId(artifact_id)},
+            {
+                "$set": {
+                    "phase": new_phase,
+                    "lastModifiedBy": user_id,
+                    "lastModifiedAt": datetime.now()
+                }
+            }
+        )
+        
+        print(f"✅ Artifact {artifact_type} moved from {old_phase} to {new_phase} by {user_id}")
+        
+        # HU-024: Audit logging
+        HelperFunctions.logAudit(
+            user_id=user_id,
+            action_type='move',
+            entity_type='artifact',
+            entity_id=str(artifact_id),
+            details={
+                'oldPhase': old_phase,
+                'newPhase': new_phase,
+                'reason': reason,
+                'artifactType': artifact.get('artifactType')
+            },
+            project_id=project_id
+        )
+        
+        return {
+            **ResponseMessage.message200,
+            "message": f"Artifact successfully moved from {old_phase} to {new_phase}",
+            "data": {
+                "artifactId": str(artifact_id),
+                "oldPhase": old_phase,
+                "newPhase": new_phase,
+                "movedAt": movement_record["movedAt"].isoformat()
+            }
+        }
+    
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500
+
+
+def _validate_phase_reassignment(project_id, old_phase, new_phase, artifact_type):
+    """
+    Validate if artifact can be moved to new phase
+    Returns dict with 'allowed' (bool), 'message' (str), and optional 'warnings' (list)
+    """
+    warnings = []
+    
+    # Check if moving to Transition phase
+    if new_phase.lower() in ['transición', 'transition']:
+        # Get all mandatory artifacts for previous phases
+        mandatory_check = _check_mandatory_artifacts_completion(project_id)
+        
+        if not mandatory_check["complete"]:
+            return {
+                "allowed": False,
+                "message": f"Cannot move to Transition: Missing mandatory artifacts - {', '.join(mandatory_check['missing'])}",
+                "warnings": mandatory_check.get("missing", [])
+            }
+    
+    # Check if moving backwards (e.g., from Construction to Elaboration)
+    phase_order = {
+        'incepción': 1, 'inception': 1,
+        'elaboración': 2, 'elaboration': 2,
+        'construcción': 3, 'construction': 3,
+        'transición': 4, 'transition': 4
+    }
+    
+    old_order = phase_order.get(old_phase.lower(), 0)
+    new_order = phase_order.get(new_phase.lower(), 0)
+    
+    if new_order < old_order:
+        warnings.append(f"Moving backwards from {old_phase} to {new_phase}")
+    
+    return {
+        "allowed": True,
+        "message": "Reassignment allowed",
+        "warnings": warnings
+    }
+
+
+def _check_mandatory_artifacts_completion(project_id):
+    """Check if all mandatory artifacts are uploaded for a project"""
+    missing = []
+    
+    # Get all artifacts for the project
+    artifacts = list(dbConnLocal.clArtifacts.find({"projectId": project_id}))
+    
+    # Check each phase's mandatory artifacts
+    for phase_key, required_list in REQUIRED_ARTIFACTS.items():
+        for req in required_list:
+            if req.get("mandatory"):
+                artifact_type = req["type"]
+                # Check if this artifact type exists for the project
+                exists = any(a.get("artifactType") == artifact_type for a in artifacts)
+                if not exists:
+                    missing.append(f"{artifact_type} ({phase_key})")
+    
+    return {
+        "complete": len(missing) == 0,
+        "missing": missing
+    }
+
+
+def fnGetArtifactMovementHistory(artifact_id):
+    """Get movement history for a specific artifact"""
+    try:
+        if not ObjectId.is_valid(artifact_id):
+            return {**ResponseMessage.message422, "message": "Invalid artifact ID"}
+        
+        movements = list(dbConnLocal.clArtifactMovements.find(
+            {"artifactId": artifact_id}
+        ).sort("movedAt", -1))
+        
+        for mov in movements:
+            mov["_id"] = str(mov["_id"])
+            if isinstance(mov.get("movedAt"), datetime):
+                mov["movedAt"] = mov["movedAt"].isoformat()
+        
+        return {
+            **ResponseMessage.message200,
+            "data": movements
+        }
+    
+    except Exception:
+        HelperFunctions.PrintException()
+        return ResponseMessage.message500

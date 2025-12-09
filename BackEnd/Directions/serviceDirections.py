@@ -5,6 +5,7 @@ serviceBluePrint = Blueprint('serviceBluePrint', __name__, url_prefix='/api/serv
 import BackEnd.GlobalInfo.ResponseMessages as ResponseMessage
 import BackEnd.GlobalInfo.Keys as connectKeys
 import BackEnd.GlobalInfo.Helpers as HelperFunctions
+from BackEnd.GlobalInfo.permissions import requireAction, requireAdmin
 
 #Functions import
 import BackEnd.Functions.serviceFunctions as callMethod
@@ -30,6 +31,7 @@ def _normalize_json_body():
 
 
 @serviceBluePrint.post('/postService')
+@requireAction('create')
 def postService():
     try:
         
@@ -87,6 +89,7 @@ def getService(strServiceId):
         return ResponseMessage.message500
 
 @serviceBluePrint.put('/updateService')
+@requireAction('edit')
 def updateService():
     try:
         # ✅ Normaliza base64 → archivo → strImageUrl
@@ -120,6 +123,7 @@ def updateService():
         return ResponseMessage.message500
 
 @serviceBluePrint.delete('/deleteService/<strServiceId>')
+@requireAdmin
 def deleteService(strServiceId):
     try:
         

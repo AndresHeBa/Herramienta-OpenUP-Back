@@ -1,0 +1,44 @@
+{
+  "exportDate": "2025-12-08T14:24:26.720545",
+  "exportVersion": "1.0",
+  "project": {
+    "_id": "69371cfae01a95bcd3d5d25c",
+    "name": "Prueba Conf 2",
+    "identifier": "CONF02",
+    "startDate": "2025-12-08",
+    "responsible": "admin",
+    "tags": [
+      "educación",
+      "angular",
+      "flask",
+      "openup",
+      "integrador"
+    ],
+    "status": "Creado",
+    "active": true,
+    "phases": [
+      {
+        "name": "Incepción",
+        "status": "Pendiente"
+      },
+      {
+        "name": "Elaboración",
+        "status": "Pendiente"
+      },
+      {
+        "name": "Construcción",
+        "status": "Pendiente"
+      },
+      {
+        "name": "Transición",
+        "status": "Pendiente"
+      }
+    ],
+    "creationDate": "2025-12-08T12:46:18.932000",
+    "configurationId": "693631775b6baae660e6266f"
+  },
+  "artifacts": [],
+  "iterations": [],
+  "microincrements": [],
+  "configuration": null
+}

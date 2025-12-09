@@ -4,6 +4,7 @@ IteracionesBluePrint = Blueprint('IteracionesBluePrint', __name__, url_prefix='/
 
 import BackEnd.GlobalInfo.ResponseMessages as ResponseMessage
 import BackEnd.GlobalInfo.Helpers as HelperFunctions
+from BackEnd.GlobalInfo.permissions import requireAction, requireAdmin
 
 # Function import
 import BackEnd.Functions.iteracionFuctions as callMethod
@@ -23,6 +24,7 @@ def _normalize_json_body():
 
 
 @IteracionesBluePrint.post('/postInteracion')
+@requireAction('create')
 def postIteracion():
     try:
         body = _normalize_json_body()
@@ -109,6 +111,7 @@ def getIteracion(project_id, iteration_name):
 
 # UPDATE - Actualizar una iteración
 @IteracionesBluePrint.put('/putIteracion/<project_id>/<iteration_name>')
+@requireAction('edit')
 def putIteracion(project_id, iteration_name):
     try:
         body = _normalize_json_body()
@@ -156,6 +159,7 @@ def putIteracion(project_id, iteration_name):
 
 # UPDATE - Actualizar solo el progreso de tareas
 @IteracionesBluePrint.patch('/updateProgress/<project_id>/<iteration_name>')
+@requireAction('edit')
 def updateProgress(project_id, iteration_name):
     try:
         body = request.get_json(silent=True) or {}
@@ -187,6 +191,7 @@ def updateProgress(project_id, iteration_name):
 
 # DELETE - Eliminar una iteración
 @IteracionesBluePrint.delete('/deleteIteracion/<project_id>/<iteration_name>')
+@requireAdmin
 def deleteIteracion(project_id, iteration_name):
     try:
         if not project_id or not project_id.strip():

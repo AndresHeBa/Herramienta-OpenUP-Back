@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 import BackEnd.GlobalInfo.ResponseMessages as ResponseMessage
 import BackEnd.GlobalInfo.Helpers as HelperFunctions
+import BackEnd.Functions.configurationFunctions as ConfigFunctions
 
 dbConnLocal = None
 try:
@@ -38,9 +39,11 @@ def _use_db():
 def fnGetPermissions():
     try:
         if _use_db():
-            docs = list(dbConnLocal.clPermissions.find())
+            # Use adapter to read from active configuration
+            docs = ConfigFunctions.fnGetPermissionsFromActiveConfig()
             for d in docs:
-                d["_id"] = str(d["_id"])
+                if "_id" in d:
+                    d["_id"] = str(d["_id"])
             return {**ResponseMessage.message200, "data": docs}
 
         return {**ResponseMessage.message200, "data": _PERMISSIONS_STORE}
@@ -115,9 +118,11 @@ def fnPatchPermission(action, roles):
 def fnGetRoles():
     try:
         if _use_db():
-            docs = list(dbConnLocal.clRoles.find())
+            # Use adapter to read from active configuration
+            docs = ConfigFunctions.fnGetRolesFromActiveConfig()
             for d in docs:
-                d["_id"] = str(d["_id"])
+                if "_id" in d:
+                    d["_id"] = str(d["_id"])
             return {**ResponseMessage.message200, "data": docs}
         return {**ResponseMessage.message200, "data": _ROLES_STORE}
     except Exception:

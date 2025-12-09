@@ -2,6 +2,7 @@ from datetime import datetime
 from bson import ObjectId
 import BackEnd.GlobalInfo.ResponseMessages as ResponseMessage
 import BackEnd.GlobalInfo.Helpers as HelperFunctions
+import BackEnd.Functions.configurationFunctions as ConfigFunctions
 
 dbConnLocal = HelperFunctions.dbConnection()
 
@@ -33,9 +34,11 @@ def fnCreateWorkflow(name, description, states):
 
 def fnGetWorkflows():
     try:
-        workflows = list(dbConnLocal.clWorkflows.find({"isActive": True}))
+        # Use adapter to read from active configuration
+        workflows = ConfigFunctions.fnGetWorkflowsFromActiveConfig()
         for w in workflows:
-            w["_id"] = str(w["_id"])
+            if "_id" in w:
+                w["_id"] = str(w["_id"])
         
         return {**ResponseMessage.message200, "Result": workflows}
 

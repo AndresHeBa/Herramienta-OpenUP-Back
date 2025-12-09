@@ -5,9 +5,11 @@ microBluePrint = Blueprint('microBluePrint', __name__, url_prefix='/api/microinc
 import BackEnd.GlobalInfo.Helpers as HelperFunctions
 import BackEnd.GlobalInfo.ResponseMessages as ResponseMessage
 import BackEnd.Functions.microFunctions as callMethod
+from BackEnd.GlobalInfo.permissions import requireAction
 
 
 @microBluePrint.post('/postMicroincrement')
+@requireAction('create')
 def postMicroincrement():
     try:
         body = request.json or {}
@@ -19,7 +21,10 @@ def postMicroincrement():
             title=body.get("title", "").strip(),
             description=body.get("description", "").strip(),
             date=body.get("date", "").strip(),
-            author=body.get("author", "").strip()
+            author=body.get("author", "").strip(),
+            micro_type=body.get("type", "funcional").strip(),  # Nuevo campo
+            evidence=body.get("evidence", "").strip(),  # Nuevo campo
+            value=body.get("value", 0)  # Nuevo campo
         )
 
         return jsonify(objResult)

@@ -17,8 +17,16 @@ def fnPostinteracion(id, name, startDate, finallyDate, goal, phase, active, task
 
         completion_percent = round((completed_tasks / total_tasks) * 100, 2) if total_tasks > 0 else 0
 
+        # Verificar si ya existe una iteración con el mismo nombre para este proyecto
+        existing = dbConnLocal.clProgress.find_one({
+            "projectId": str(id),
+            "iteration": name
+        })
+        
+        if existing:
+            return ResponseMessage.message409
+
         iteracion = {
-            "_id": ObjectId(),
             "projectId": str(id),
             "iteration": name,
             "startDate": startDate,
@@ -31,24 +39,17 @@ def fnPostinteracion(id, name, startDate, finallyDate, goal, phase, active, task
             "observations": observations,
             "creationDate": datetime.utcnow(),
             "version": 1,
-            "status": "Active" if active else "Inactive"
+            "status": "Active" if active else "Inactive",
+            "active": active
         }
 
         iteracion = HelperFunctions.deleteBlankAttributes(iteracion)
 
-        
-        result = dbConnLocal.clProjects.update_one(
-            {
-                "_id": ObjectId(id),
-                "iterations.iteration": {"$ne": name}  # evita duplicados
-            },
-            {
-                "$push": {"iterations": iteracion}
-            }
-        )
+        # Insertar en la colección clProgress
+        result = dbConnLocal.clProgress.insert_one(iteracion)
 
-        if result.modified_count == 0:
-            return ResponseMessage.message409
+        if not result.inserted_id:
+            return ResponseMessage.message500
 
         return ResponseMessage.message201
 
@@ -59,15 +60,12 @@ def fnPostinteracion(id, name, startDate, finallyDate, goal, phase, active, task
 # READ - Obtener todas las iteraciones de un proyecto
 def fnGetIterations(project_id):
     try:
-        project = dbConnLocal.clProjects.find_one(
-            {"_id": ObjectId(project_id)},
-            {"iterations": 1, "_id": 0}
-        )
-
-        if not project:
-            return ResponseMessage.message404
-
-        iterations = project.get("iterations", [])
+        print(f"🔍 Buscando iteraciones para projectId: {project_id}")
+        
+        # Buscar iteraciones en la colección clProgress filtradas por projectId
+        iterations = list(dbConnLocal.clProgress.find({"projectId": project_id}))
+        
+        print(f"📊 Iteraciones encontradas: {len(iterations)}")
         
         # Convertir ObjectId a string para serialización
         for iteration in iterations:
@@ -88,15 +86,13 @@ def fnGetIterations(project_id):
 # READ - Obtener una iteración específica
 def fnGetIteration(project_id, iteration_name):
     try:
-        project = dbConnLocal.clProjects.find_one(
-            {"_id": ObjectId(project_id)},
-            {"iterations": {"$elemMatch": {"iteration": iteration_name}}}
-        )
+        iteration = dbConnLocal.clProgress.find_one({
+            "projectId": project_id,
+            "iteration": iteration_name
+        })
 
-        if not project or "iterations" not in project or len(project["iterations"]) == 0:
+        if not iteration:
             return ResponseMessage.message404
-
-        iteration = project["iterations"][0]
         
         if "_id" in iteration:
             iteration["_id"] = str(iteration["_id"])
@@ -120,26 +116,27 @@ def fnPutIteration(project_id, iteration_name, startDate=None, finallyDate=None,
         update_fields = {}
         
         if startDate is not None:
-            update_fields["iterations.$.startDate"] = startDate
+            update_fields["startDate"] = startDate
         if finallyDate is not None:
-            update_fields["iterations.$.endDate"] = finallyDate
+            update_fields["endDate"] = finallyDate
         if goal is not None:
-            update_fields["iterations.$.goal"] = goal
+            update_fields["goal"] = goal
         if phase is not None:
-            update_fields["iterations.$.phase"] = phase
+            update_fields["phase"] = phase
         if active is not None:
-            update_fields["iterations.$.status"] = "Active" if active else "Inactive"
+            update_fields["status"] = "Active" if active else "Inactive"
+            update_fields["active"] = active
         if tasks is not None:
             completed_tasks = sum(1 for t in tasks if t.get("completed") == True)
             total_tasks = len(tasks)
             completion_percent = round((completed_tasks / total_tasks) * 100, 2) if total_tasks > 0 else 0
             
-            update_fields["iterations.$.tasks"] = tasks
-            update_fields["iterations.$.completionPercent"] = completion_percent
+            update_fields["tasks"] = tasks
+            update_fields["completionPercent"] = completion_percent
         if blockers is not None:
-            update_fields["iterations.$.blockers"] = blockers
+            update_fields["blockers"] = blockers
         if observations is not None:
-            update_fields["iterations.$.observations"] = observations
+            update_fields["observations"] = observations
 
         if not update_fields:
             return {
@@ -147,16 +144,14 @@ def fnPutIteration(project_id, iteration_name, startDate=None, finallyDate=None,
                 "message": "No fields to update"
             }
 
-        # Incrementar versión
-        update_fields["iterations.$.version"] = {"$inc": 1}
-
-        result = dbConnLocal.clProjects.update_one(
+        result = dbConnLocal.clProgress.update_one(
             {
-                "_id": ObjectId(project_id),
-                "iterations.iteration": iteration_name
+                "projectId": project_id,
+                "iteration": iteration_name
             },
             {
-                "$set": update_fields
+                "$set": update_fields,
+                "$inc": {"version": 1}
             }
         )
 
@@ -179,23 +174,13 @@ def fnPutIteration(project_id, iteration_name, startDate=None, finallyDate=None,
 # DELETE - Eliminar una iteración
 def fnDeleteIteration(project_id, iteration_name):
     try:
-        result = dbConnLocal.clProjects.update_one(
-            {"_id": ObjectId(project_id)},
-            {
-                "$pull": {
-                    "iterations": {"iteration": iteration_name}
-                }
-            }
-        )
+        result = dbConnLocal.clProgress.delete_one({
+            "projectId": project_id,
+            "iteration": iteration_name
+        })
 
-        if result.matched_count == 0:
+        if result.deleted_count == 0:
             return ResponseMessage.message404
-
-        if result.modified_count == 0:
-            return {
-                "status": 404,
-                "message": "Iteration not found in project"
-            }
 
         return ResponseMessage.message200
 
@@ -211,19 +196,17 @@ def fnUpdateIterationProgress(project_id, iteration_name, tasks):
         total_tasks = len(tasks)
         completion_percent = round((completed_tasks / total_tasks) * 100, 2) if total_tasks > 0 else 0
 
-        result = dbConnLocal.clProjects.update_one(
+        result = dbConnLocal.clProgress.update_one(
             {
-                "_id": ObjectId(project_id),
-                "iterations.iteration": iteration_name
+                "projectId": project_id,
+                "iteration": iteration_name
             },
             {
                 "$set": {
-                    "iterations.$.tasks": tasks,
-                    "iterations.$.completionPercent": completion_percent
+                    "tasks": tasks,
+                    "completionPercent": completion_percent
                 },
-                "$inc": {
-                    "iterations.$.version": 1
-                }
+                "$inc": {"version": 1}
             }
         )
 

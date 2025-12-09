@@ -42,13 +42,20 @@ def fnPostPlan(projectId, objectives, scope, initialSchedule, phaseResponsibles,
 
 def fnGetPlan(projectId):
     try:
-        dbResult = list(dbConnLocal.clPlans.find({"projectId": projectId}))
-        for result in dbResult:
-            result["_id"] = str(result["_id"])
+        # Buscar el plan más reciente del proyecto (ordenado por versión descendente)
+        dbResult = dbConnLocal.clPlans.find_one(
+            {"projectId": projectId},
+            sort=[("version", -1)]
+        )
+        
+        if not dbResult:
+            return ResponseMessage.message404
+
+        dbResult["_id"] = str(dbResult["_id"])
 
         return {
             **ResponseMessage.message200,
-            "Result": dbResult
+            "data": dbResult
         }
 
     except Exception:

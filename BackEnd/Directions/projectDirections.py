@@ -5,6 +5,7 @@ projectBluePrint = Blueprint('projectBluePrint', __name__, url_prefix='/api/proj
 import BackEnd.GlobalInfo.ResponseMessages as ResponseMessage
 import BackEnd.GlobalInfo.Keys as connectKeys
 import BackEnd.GlobalInfo.Helpers as HelperFunctions
+from BackEnd.GlobalInfo.permissions import requireAction, requireAdmin
 
 #Functions import
 import BackEnd.Functions.projectFunctions as callMethod
@@ -30,6 +31,7 @@ def _normalize_json_body():
 
 
 @projectBluePrint.post('/postProject')
+@requireAction('create')
 def postProject():
     try:
         # 📌 Normaliza body JSON
@@ -51,8 +53,15 @@ def postProject():
         if not all([projectName, projectIdentifier, startDate]):
             return ResponseMessage.message422
 
-        # Definir las fases predeterminadas de OpenUP
-        openup_phases = ["Incepción", "Elaboración", "Construcción", "Transición"]
+        # Get phases from request or use default OpenUP phases
+        phases = body.get('phases', ["Incepción", "Elaboración", "Construcción", "Transición"])
+        
+        # Get configurationId if provided
+        configuration_id = body.get('configurationId')
+        
+        # HU-022: Get repository information if provided
+        repository_url = body.get('repositoryUrl')
+        repository_type = body.get('repositoryType', 'git')
 
         # Llamar al método para crear proyecto
         objResult = callMethod.fnPostProject(
@@ -62,12 +71,16 @@ def postProject():
             description=description,
             responsible=responsible,
             tags=tags,
-            phases=openup_phases,
+            phases=phases,
+            configuration_id=configuration_id,
+            repository_url=repository_url,
+            repository_type=repository_type,
             status="Creado",
             active=active
         )
+        
 
-        return ResponseMessage.message200
+        return objResult
 
     except Exception:
         HelperFunctions.PrintException()
@@ -107,31 +120,34 @@ def getProject(strProjectId):
         return ResponseMessage.message500
 
 @projectBluePrint.put('/updateProject')
+@requireAction('edit')
 def updateProject():
     try:
-        # ✅ Normaliza base64 → archivo → strImageUrl
-        body = _normalize_json_body()
-        if "__error__" in body:
-            code, msg = body["__error__"]
-            return jsonify({"status": code, "message": msg}), code
+        body = request.get_json(silent=True) or {}
         
-        strProjectId = "" if("_id" not in body) else body['_id']
-        strTitle = "" if("strTitle" not in body) else body['strTitle']
-        strFeatures = "" if("strFeatures" not in body) else body['strFeatures']
-        strDescription = "" if("strDescription" not in body) else body['strDescription']
-        strTitleEng = "" if("strTitleEng" not in body) else body['strTitleEng']
-        strFeaturesEng = "" if("strFeaturesEng" not in body) else body['strFeaturesEng']
-        strDescriptionEng = "" if("strDescriptionEng" not in body) else body['strDescriptionEng']
-        boolActive = True if("boolActive" not in body) else body['boolActive']
-        strImgUrl = "" if("strImageUrl" not in body) else body['strImageUrl']
-        strIconUrl = "" if("strIconUrl" not in body) else body['strIconUrl']
+        projectId = body.get('_id', '').strip()
+        projectName = body.get('name', '').strip()
+        identifier = body.get('identifier', '').strip()
+        startDate = body.get('startDate', '').strip()
+        description = body.get('description', '').strip()
+        responsible = body.get('responsible', '').strip()
+        tags = body.get('tags', [])
+        repositoryUrl = body.get('repositoryUrl', '').strip()
         
-        
-        required_validation = any(str(x).strip() == '' for x in [strTitle, strFeatures, strDescription])
-        if required_validation:
+        # Validar campos obligatorios
+        if not all([projectId, projectName, identifier, startDate]):
             return ResponseMessage.message422
         
-        objResult = callMethod.fnUpdateProject(strProjectId, strTitle, strFeatures, strDescription, boolActive, strImgUrl, strIconUrl, strTitleEng, strFeaturesEng, strDescriptionEng)
+        objResult = callMethod.fnUpdateOpenUPProject(
+            projectId=projectId,
+            name=projectName,
+            identifier=identifier,
+            startDate=startDate,
+            description=description,
+            responsible=responsible,
+            tags=tags,
+            repositoryUrl=repositoryUrl
+        )
 
         return jsonify(objResult)
     
@@ -140,6 +156,7 @@ def updateProject():
         return ResponseMessage.message500
 
 @projectBluePrint.delete('/deleteProject/<strProjectId>')
+@requireAdmin
 def deleteProject(strProjectId):
     try:
         
@@ -153,6 +170,7 @@ def deleteProject(strProjectId):
     
 # baja logica
 @projectBluePrint.put('/deactivateProject/<strProjectId>')
+@requireAction('change_state')
 def deactivateProject(strProjectId):
     try:
         
